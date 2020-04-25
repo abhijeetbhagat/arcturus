@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 rand = "0.7"
-async-std = "1.5.0"
+async-std = {version ="1.5.0", features=["attributes"]}
+clap = "2.33.0"
