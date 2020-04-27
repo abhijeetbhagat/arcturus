@@ -40,3 +40,21 @@ pub fn to_txn_id(bytes: &[u8]) -> u128 {
 /*pub fn read_n(slice: &[u8], n: u32) -> &[u8] {
     slice.get()
 }*/
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_iter_movement() {
+        let mut iterator = [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        ]
+        .iter();
+        assert!(0x102 == read_u16(&mut iterator));
+        assert!(0x304 == read_u16(&mut iterator));
+        assert!(0x5060708 == read_u32(&mut iterator));
+        assert!(&[9, 10] == read_nbytes(&mut iterator, 2));
+        assert!(&[1] == read_nbytes(&mut iterator, 1));
+        assert!(0x2020202020202020202020202020202 == to_txn_id(read_nbytes(&mut iterator, 16)));
+    }
+}
