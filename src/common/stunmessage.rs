@@ -65,13 +65,17 @@ pub enum Class {
     Indication,
     Success,
     Error,
+    Unknown,
 }
 
 pub struct Type(pub Class, pub Method);
 
+#[derive(Clone)]
 pub enum Method {
     //TODO abhi: there are other methods too
-    Binding,
+    BindingRequest = 0x0001,
+    BindingResponse = 0x0101,
+    Unknown = 0xffff,
 }
 
 pub struct StunMessageHeader {
@@ -91,12 +95,12 @@ impl StunMessageHeader {
         }
     }
 
-    pub fn get_class(self) -> Class {
-        self.msg_type.0
+    pub fn get_class(&self) -> &Class {
+        &self.msg_type.0
     }
 
-    pub fn get_method(self) -> Method {
-        self.msg_type.1
+    pub fn get_method(&self) -> Method {
+        self.msg_type.1.clone()
     }
 }
 
@@ -113,28 +117,70 @@ impl StunMessage {
         }
     }
 
-    pub fn as_raw(&self) -> &[u8] {
-        //TODO abhi: convert this message to raw
-        unimplemented!();
+    pub fn as_raw(&self) -> Vec<u8> {
+        //TODO abhi: calc the capacity
+        let mut buf = Vec::with_capacity(20);
+        buf.extend_from_slice(&(self.header.get_method() as u16).to_be_bytes());
+        buf.extend_from_slice(&self.header.length.to_be_bytes());
+        buf.extend_from_slice(&miscutils::MAGIC_COOKIE.to_be_bytes());
+        buf.extend_from_slice(&self.header.txn_id.to_be_bytes().get(4..).unwrap());
+        if self.payload.is_some() {
+            buf.extend_from_slice(&self.payload.as_ref().unwrap());
+        }
+        buf
     }
 
     pub fn from_raw(data: &[u8]) -> Option<Self> {
-        let msg_type = bitutils::read_u16(data);
-        unimplemented!();
+        let mut iter = data.iter();
+        let msg_type = bitutils::read_u16(&mut iter);
+        let msg_length = bitutils::read_u16(&mut iter);
+        let _magic_cookie = bitutils::read_u32(&mut iter);
+        let txn_id =
+            bitutils::to_txn_id(&[&[0u8, 0, 0, 0], bitutils::read_nbytes(&mut iter, 12)].concat());
+        let (class, method) = StunMessage::get_class_and_method(msg_type);
+        let header = StunMessageHeader::new(Type(class, method), msg_length, txn_id);
+        let payload = if msg_length > 0 {
+            Some(Box::new(bitutils::read_nbytes(&mut iter, msg_length as usize)).to_vec())
+        } else {
+            None
+        };
+
+        Some(StunMessage::new(header, payload))
+    }
+
+    fn get_class_and_method(word: u16) -> (Class, Method) {
+        let class = match word & 0x110 {
+            0x0 => Class::Request,
+            0x10 => Class::Indication,
+            0x100 => Class::Success,
+            0x110 => Class::Error,
+            _ => Class::Unknown,
+        };
+
+        let method = match word & 0xffff {
+            0x1 => Method::BindingRequest,
+            0x101 => Method::BindingResponse,
+            _ => Method::Unknown,
+        };
+
+        (class, method)
     }
 }
 
-enum Attribute {
-    MappedAddress,
-    Username,
-    MessageIntegrity,
-    ErrorCode,
-    UnknownAttributes,
-    Realm,
-    Nonce,
-    XorMappedAddress,
-    //TODO abhi: the following are unsupported
-    Software,
-    AlternateServer,
-    Fingerprint,
+#[cfg(test)]
+mod test {
+    use super::{Class, Method, StunMessage, StunMessageHeader, Type};
+    use crate::utils::miscutils;
+    #[test]
+    fn test_msg_to_raw_conversion() {
+        let txn_id = miscutils::gen_txn_id();
+        let header = StunMessageHeader::new(
+            Type(Class::Request, Method::BindingRequest),
+            20 + 0, //header is 20 bytes + payload length
+            txn_id,
+        );
+        let msg = StunMessage::new(header, None);
+        let raw_data = msg.as_raw();
+        assert!(raw_data[0] == 0 && raw_data[1] == 1);
+    }
 }
