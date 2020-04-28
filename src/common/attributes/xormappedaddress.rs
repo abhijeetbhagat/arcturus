@@ -43,7 +43,6 @@ impl XorMappedAddress {
         let mut iter = data.iter();
         let _ = bitutils::read_u8(&mut iter);
         let family = bitutils::read_u8(&mut iter);
-        println!("family is {}", family);
         let port = bitutils::read_u16(&mut iter);
         let address = if family == 1 {
             either::Left(bitutils::read_u32(&mut iter))

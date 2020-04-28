@@ -43,8 +43,9 @@ impl StunClient {
         if xor_mapped_addr.family == 1 {
             let integral_addr: u32 =
                 u32::from(xor_mapped_addr.address.left().unwrap()) ^ miscutils::MAGIC_COOKIE;
-            let ip: u32 = u32::from("172.20.10.2".parse::<Ipv4Addr>().unwrap());
-            assert!(integral_addr == ip);
+            //let ip: u32 = u32::from("127.0.0.1".parse::<Ipv4Addr>().unwrap());
+            //assert!(integral_addr == ip);
+            println!("Your IP is {:?}", integral_addr);
         } else {
             //TODO abhi: assert on an ipv6 address
             //let integral_addr: u128 =
