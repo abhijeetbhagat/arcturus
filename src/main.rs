@@ -30,6 +30,7 @@ async fn main() -> std::io::Result<()> {
                 )
                 .arg(
                     Arg::with_name("addr")
+                        .help("IP:port e.g. 127.0.0.1:7969 or ::1:7969")
                         .short("a")
                         .long("address")
                         .takes_value(true),
@@ -41,19 +42,17 @@ async fn main() -> std::io::Result<()> {
                    ),*/
         )
         .subcommand(
-            SubCommand::with_name("whereami")
-                .arg(
-                    Arg::with_name("rip")
-                        .long("rh")
-                        .required(true)
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("rport")
-                        .long("rp")
-                        .required(true)
-                        .takes_value(true),
-                ),
+            SubCommand::with_name("whereami").arg(
+                Arg::with_name("rip")
+                    .long("rh")
+                    .required(true)
+                    .takes_value(true),
+            ), /*.arg(
+                   Arg::with_name("rport")
+                       .long("rp")
+                       .required(true)
+                       .takes_value(true),
+               ),*/
         )
         .get_matches();
 
@@ -85,12 +84,22 @@ async fn main() -> std::io::Result<()> {
         let rip = matches
             .value_of("rip")
             .unwrap()
-            .parse::<Ipv4Addr>()
-            .unwrap();
-        let rport = matches.value_of("rport").unwrap().parse::<u16>().unwrap();
-        let mut client = StunClient::new(SocketAddrV4::new(rip, rport))
+            /*.parse::<Ipv4Addr>()
+            .unwrap();)*/
+            .to_socket_addrs()
+            //.parse::<Ipv4Addr>()
             .await
+            .unwrap()
+            .next()
             .unwrap();
+        //let rport = matches.value_of("rport").unwrap().parse::<u16>().unwrap();
+        let mut client = StunClient::new(match rip {
+            SocketAddr::V4(rip) => SocketAddr::V4(SocketAddrV4::new(*rip.ip(), rip.port())),
+
+            SocketAddr::V6(rip) => SocketAddr::V6(SocketAddrV6::new(*rip.ip(), rip.port(), 0, 0)),
+        })
+        .await
+        .unwrap();
         client.connect().await.unwrap();
         client.get_reflexive_address().await.unwrap();
         Ok(())
