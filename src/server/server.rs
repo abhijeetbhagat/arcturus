@@ -46,7 +46,7 @@ impl StunServer {
                                     let response = match source_transport_sock_addr {
                                         SocketAddr::V4(v4_sock_addr) => {
                                             let (xor_port, xor_mapped_addr) =
-                                                obfuscation::obfuscate_v4(
+                                                obfuscation::obfuscate_v4_ip_port(
                                                     &v4_sock_addr,
                                                     stun_message.header.magic,
                                                 );
@@ -66,7 +66,7 @@ impl StunServer {
 
                                         SocketAddr::V6(v6_sock_addr) => {
                                             let (xor_port, xor_mapped_addr) =
-                                                obfuscation::obfuscate_v6(
+                                                obfuscation::obfuscate_v6_ip_port(
                                                     &v6_sock_addr,
                                                     stun_message.header.magic,
                                                     stun_message.header.txn_id,

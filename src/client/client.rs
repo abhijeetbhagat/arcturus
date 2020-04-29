@@ -3,6 +3,7 @@ use crate::common::attributes::xormappedaddress::XorMappedAddress;
 use crate::common::stunmessage::{Class, Method, StunMessage, StunMessageHeader, Type};
 use crate::utils::miscutils;
 use crate::utils::miscutils::Result;
+use crate::utils::obfuscation;
 use async_std::net::SocketAddr;
 use async_std::net::TcpStream;
 use async_std::net::ToSocketAddrs;
@@ -41,18 +42,23 @@ impl StunClient {
         )
         .unwrap();
         if xor_mapped_addr.family == 1 {
-            let integral_addr: u32 =
-                u32::from(xor_mapped_addr.address.left().unwrap()) ^ miscutils::MAGIC_COOKIE;
+            let integral_addr: u32 = obfuscation::unobfuscate_v4_ip(
+                xor_mapped_addr.address.left().unwrap(),
+                miscutils::MAGIC_COOKIE,
+            );
             //let ip: u32 = u32::from("127.0.0.1".parse::<Ipv4Addr>().unwrap());
             //assert!(integral_addr == ip);
-            println!("Your IP is {:?}", integral_addr);
+            println!("Your IPv4 addr is {:?}", integral_addr);
         } else {
             //TODO abhi: assert on an ipv6 address
-            //let integral_addr: u128 =
-            //    u128::from(xor_mapped_addr.address.right().unwrap()) ^ miscutils::MAGIC_COOKIE;
-            //let ip: u32 = u32::from("172.20.10.2".parse::<Ipv4Addr>().unwrap());
-            //assert!(integral_addr == ip);
+            let integral_addr: u128 = obfuscation::unobfuscate_v6_ip(
+                xor_mapped_addr.address.right().unwrap(),
+                miscutils::MAGIC_COOKIE,
+                binding_response.header.txn_id,
+            );
+            println!("Your IPv6 addr is {:?}", integral_addr);
         }
+
         Ok(())
     }
 
