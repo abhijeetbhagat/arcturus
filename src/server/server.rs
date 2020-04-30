@@ -6,8 +6,8 @@ use crate::utils::miscutils::Result;
 use crate::utils::obfuscation;
 use async_std::net::SocketAddr;
 use async_std::net::TcpListener;
-use async_std::net::{UdpSocket, TcpStream};
 use async_std::net::ToSocketAddrs;
+use async_std::net::{TcpStream, UdpSocket};
 use async_std::prelude::*;
 use async_std::task;
 
@@ -106,12 +106,65 @@ impl StunServer {
         Ok(())
     }
 
-    pub asycn fn start_udp(addr: impl ToSocketAddrs) -> Result<()>{
+    pub async fn start_udp(addr: impl ToSocketAddrs) -> Result<()> {
         let socket = UdpSocket::bind(addr).await?;
         let mut buf = vec![0; 1024];
-        loop{
+        loop {
             let (size, peer) = socket.recv_from(&mut buf).await?;
-            socket.send(&buf[..n], &peer).await?;
+            if let Some(stun_message) = StunServer::parse(&buf[..size], peer) {
+                socket.send(&buf[..size]).await?;
+            }
+        }
+        Ok(())
+    }
+
+    fn parse(buf: &[u8], source_transport_sock_addr: SocketAddr) -> Option<StunMessage> {
+        if let Some(stun_message) = StunMessage::from_raw(buf) {
+            match (
+                stun_message.header.msg_type.0,
+                stun_message.header.msg_type.1,
+            ) {
+                (Class::Request, Method::BindingRequest) => {
+                    //This is a binding request
+                    let response = match source_transport_sock_addr {
+                        SocketAddr::V4(v4_sock_addr) => {
+                            let (xor_port, xor_mapped_addr) = obfuscation::obfuscate_v4_ip_port(
+                                &v4_sock_addr,
+                                stun_message.header.magic,
+                            );
+                            let header = StunMessageHeader::new(
+                                Type(Class::Success, Method::BindingResponse),
+                                12,
+                                stun_message.header.txn_id,
+                            );
+                            let attribute =
+                                XorMappedAddress::new(1, xor_port, Left(xor_mapped_addr)).as_raw();
+                            StunMessage::new(header, Some(attribute))
+                        }
+
+                        SocketAddr::V6(v6_sock_addr) => {
+                            let (xor_port, xor_mapped_addr) = obfuscation::obfuscate_v6_ip_port(
+                                &v6_sock_addr,
+                                stun_message.header.magic,
+                                stun_message.header.txn_id,
+                            );
+                            let header = StunMessageHeader::new(
+                                Type(Class::Success, Method::BindingResponse),
+                                24,
+                                stun_message.header.txn_id,
+                            );
+                            let attribute =
+                                XorMappedAddress::new(2, xor_port, Right(xor_mapped_addr)).as_raw();
+                            StunMessage::new(header, Some(attribute))
+                        }
+                    };
+
+                    Some(response)
+                }
+                _ => None,
+            }
+        } else {
+            None
         }
     }
 }
