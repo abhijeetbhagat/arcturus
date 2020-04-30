@@ -120,11 +120,8 @@ impl StunServer {
 
     fn parse(buf: &[u8], source_transport_sock_addr: SocketAddr) -> Option<StunMessage> {
         if let Some(stun_message) = StunMessage::from_raw(buf) {
-            match (
-                stun_message.header.msg_type.0,
-                stun_message.header.msg_type.1,
-            ) {
-                (Class::Request, Method::BindingRequest) => {
+            match (stun_message.header.msg_type) {
+                Type(Class::Request, Method::BindingRequest) => {
                     //This is a binding request
                     let response = match source_transport_sock_addr {
                         SocketAddr::V4(v4_sock_addr) => {
