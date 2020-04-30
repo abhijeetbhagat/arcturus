@@ -4,10 +4,9 @@ use either::{Left, Right};
 use crate::common::stunmessage::{Class, Method, StunMessage, StunMessageHeader, Type};
 use crate::utils::miscutils::Result;
 use crate::utils::obfuscation;
-use async_std::io::Read;
 use async_std::net::SocketAddr;
 use async_std::net::TcpListener;
-use async_std::net::TcpStream;
+use async_std::net::{UdpSocket, TcpStream};
 use async_std::net::ToSocketAddrs;
 use async_std::prelude::*;
 use async_std::task;
@@ -105,5 +104,14 @@ impl StunServer {
             }
         }
         Ok(())
+    }
+
+    pub asycn fn start_udp(addr: impl ToSocketAddrs) -> Result<()>{
+        let socket = UdpSocket::bind(addr).await?;
+        let mut buf = vec![0; 1024];
+        loop{
+            let (size, peer) = socket.recv_from(&mut buf).await?;
+            socket.send(&buf[..n], &peer).await?;
+        }
     }
 }
