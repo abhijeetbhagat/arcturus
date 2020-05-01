@@ -1,5 +1,5 @@
 # arcturus
-A STUN server and client implementation in Rust.
+A STUN ([RFC5389](https://tools.ietf.org/html/rfc5389)) server and client implementation in Rust.
 It is named after a [star](https://en.wikipedia.org/wiki/Arcturus) used for navigation.
 
 Ask arcturus to shine at the default loopback address and 7969 port:
