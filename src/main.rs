@@ -1,6 +1,5 @@
-#[macro_use]
-extern crate clap;
 extern crate async_std;
+extern crate clap;
 use clap::{App, Arg, SubCommand};
 
 mod client;
@@ -11,11 +10,8 @@ mod utils;
 use async_std::net::Ipv4Addr;
 use async_std::net::SocketAddr;
 use async_std::net::{IpAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
-use async_std::prelude::*;
-use async_std::task;
 use client::client::StunClient;
 use server::server::StunServer;
-use utils::miscutils::Result;
 
 #[async_std::main]
 async fn main() -> std::io::Result<()> {
@@ -34,12 +30,14 @@ async fn main() -> std::io::Result<()> {
                         .short("a")
                         .long("address")
                         .takes_value(true),
-                ), /*.arg(
-                       Arg::with_name("port")
-                           .short("p")
-                           .long("port")
-                           .takes_value(true),
-                   ),*/
+                )
+                .arg(
+                    Arg::with_name("transport")
+                        .help("Should it listen for TCP or UDP connections?")
+                        .short("t")
+                        .long("transport")
+                        .takes_value(true),
+                ),
         )
         .subcommand(
             SubCommand::with_name("whereami").arg(
@@ -47,12 +45,7 @@ async fn main() -> std::io::Result<()> {
                     .long("rh")
                     .required(true)
                     .takes_value(true),
-            ), /*.arg(
-                   Arg::with_name("rport")
-                       .long("rp")
-                       .required(true)
-                       .takes_value(true),
-               ),*/
+            ),
         )
         .get_matches();
 
@@ -61,50 +54,50 @@ async fn main() -> std::io::Result<()> {
             .value_of("addr")
             .unwrap_or("127.0.0.1:7969")
             .to_socket_addrs()
-            //.parse::<Ipv4Addr>()
             .await
             .unwrap()
             .next()
             .unwrap();
 
-        /*let port = matches
-        .value_of("port")
-        .unwrap_or("7969")
-        .parse::<u16>()
-        .unwrap();*/
+        let transport = matches.value_of("transport").unwrap_or("udp");
 
-        let fut = StunServer::start(match ip {
+        let ip = match ip {
             SocketAddr::V4(ip) => SocketAddr::V4(SocketAddrV4::new(*ip.ip(), ip.port())),
-
             SocketAddr::V6(ip) => SocketAddr::V6(SocketAddrV6::new(*ip.ip(), ip.port(), 0, 0)),
-        });
-        task::block_on(fut);
+        };
+
+        //TODO abhi: start in a hybrid mode (TCP + UDP at the same time)
+        if transport == "tcp" {
+            StunServer::start(ip).await;
+        } else {
+            StunServer::start_udp(ip).await;
+        }
+
         Ok(())
     } else if let Some(matches) = matches.subcommand_matches("whereami") {
         let rip = matches
             .value_of("rip")
             .unwrap()
-            /*.parse::<Ipv4Addr>()
-            .unwrap();)*/
             .to_socket_addrs()
-            //.parse::<Ipv4Addr>()
             .await
             .unwrap()
             .next()
             .unwrap();
-        //let rport = matches.value_of("rport").unwrap().parse::<u16>().unwrap();
+
         let mut client = StunClient::new(match rip {
             SocketAddr::V4(rip) => SocketAddr::V4(SocketAddrV4::new(*rip.ip(), rip.port())),
-
             SocketAddr::V6(rip) => SocketAddr::V6(SocketAddrV6::new(*rip.ip(), rip.port(), 0, 0)),
         })
         .await
         .unwrap();
+
         client.connect().await.unwrap();
         client.get_reflexive_address().await.unwrap();
+
         Ok(())
     } else {
         println!("Invalid subcommand. Please RTFM.");
+
         Ok(())
     }
 }
