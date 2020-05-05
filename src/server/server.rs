@@ -58,7 +58,9 @@ impl StunServer {
             let (size, peer) = socket.recv_from(&mut buf).await?;
             if size > 0 {
                 if let Some(stun_message) = StunServer::parse(&buf[..size], peer) {
-                    socket.send(&stun_message.as_raw()).await?;
+                    socket.send_to(&stun_message.as_raw(), peer).await?;
+                } else {
+                    println!("Couldnt parse request");
                 }
             }
         }

@@ -10,7 +10,9 @@ mod utils;
 use async_std::net::Ipv4Addr;
 use async_std::net::SocketAddr;
 use async_std::net::{IpAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
-use client::client::StunClient;
+use client::stunclient::StunClient;
+use client::tcpclient::StunTcpClient;
+use client::udpclient::StunUdpClient;
 use server::server::StunServer;
 
 #[async_std::main]
@@ -40,12 +42,19 @@ async fn main() -> std::io::Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("whereami").arg(
-                Arg::with_name("rip")
-                    .long("rh")
-                    .required(true)
-                    .takes_value(true),
-            ),
+            SubCommand::with_name("whereami")
+                .arg(
+                    Arg::with_name("raddr")
+                        .short("h")
+                        .required(true)
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("transport")
+                        .short("t")
+                        .long("transport")
+                        .takes_value(true),
+                ),
         )
         .get_matches();
 
@@ -76,7 +85,7 @@ async fn main() -> std::io::Result<()> {
         Ok(())
     } else if let Some(matches) = matches.subcommand_matches("whereami") {
         let rip = matches
-            .value_of("rip")
+            .value_of("raddr")
             .unwrap()
             .to_socket_addrs()
             .await
@@ -84,13 +93,17 @@ async fn main() -> std::io::Result<()> {
             .next()
             .unwrap();
 
-        let mut client = StunClient::new(match rip {
+        let transport = matches.value_of("transport").unwrap_or("udp");
+
+        let rip = match rip {
             SocketAddr::V4(rip) => SocketAddr::V4(SocketAddrV4::new(*rip.ip(), rip.port())),
             SocketAddr::V6(rip) => SocketAddr::V6(SocketAddrV6::new(*rip.ip(), rip.port(), 0, 0)),
-        })
-        .await
-        .unwrap();
-
+        };
+        let mut client = if transport == "tcp" {
+            StunTcpClient::new(rip).await.unwrap()
+        } else {
+            StunUdpClient::new(rip).await.unwrap()
+        };
         client.connect().await.unwrap();
         client.get_reflexive_address().await.unwrap();
 

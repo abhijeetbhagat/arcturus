@@ -45,6 +45,7 @@ impl StunClient for StunUdpClient {
     async fn connect(&mut self) -> Result<()> {
         let socket = Some(UdpSocket::bind("127.0.0.1:0").await?);
         self.socket = socket;
+        self.socket.as_ref().unwrap().connect(self.addr).await?;
         Ok(())
     }
 
