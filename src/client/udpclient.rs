@@ -43,7 +43,12 @@ impl StunUdpClient {
 #[async_trait]
 impl StunClient for StunUdpClient {
     async fn connect(&mut self) -> Result<()> {
-        let socket = Some(UdpSocket::bind("127.0.0.1:0").await?);
+        let local_ip = if self.addr.is_ipv4() {
+            "127.0.0.1:7969"
+        } else {
+            "::1:0"
+        };
+        let socket = Some(UdpSocket::bind(local_ip).await?);
         self.socket = socket;
         self.socket.as_ref().unwrap().connect(self.addr).await?;
         Ok(())
