@@ -39,3 +39,11 @@ or query arcturus if it is listening at an IPv6 address with UDP as transport:
 $ cargo run -- whereami -h ::1:7969 -t udp
 Your IPv6 addr is 1
 ```
+
+### Building
+1. Install [rust](https://www.rust-lang.org/tools/install).
+2. Clone this repo
+3. `$ cd arcturus`
+4. `$ cargo build`
+
+Executable should be created in the `target` folder. Replace `cargo run` with `arcturus` in the above commands.
