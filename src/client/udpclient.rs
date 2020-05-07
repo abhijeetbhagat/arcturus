@@ -44,7 +44,7 @@ impl StunUdpClient {
 impl StunClient for StunUdpClient {
     async fn connect(&mut self) -> Result<()> {
         let local_ip = if self.addr.is_ipv4() {
-            "127.0.0.1:7969"
+            "127.0.0.1:0"
         } else {
             "::1:0"
         };

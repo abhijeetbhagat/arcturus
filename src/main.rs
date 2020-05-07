@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
                 )
                 .arg(
                     Arg::with_name("addr")
-                        .help("IP:port e.g. 127.0.0.1:7969 or ::1:7969")
+                        .help("IP:port e.g. 127.0.0.1:3478 or ::1:3478")
                         .short("a")
                         .long("address")
                         .takes_value(true),
@@ -61,7 +61,7 @@ async fn main() -> std::io::Result<()> {
     if let Some(matches) = matches.subcommand_matches("shine") {
         let ip = matches
             .value_of("addr")
-            .unwrap_or("127.0.0.1:7969")
+            .unwrap_or("127.0.0.1:3478")
             .to_socket_addrs()
             .await
             .unwrap()
