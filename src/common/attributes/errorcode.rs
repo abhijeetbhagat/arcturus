@@ -1,3 +1,5 @@
+use crate::utils::bitutils;
+
 /* from https://tools.ietf.org/html/rfc5389#section-15.6
 
        0                   1                   2                   3
@@ -31,6 +33,18 @@ impl ErrorCode {
     }
 
     pub fn from_raw(data: &[u8]) -> Option<Self> {
+        let mut iter = data.iter();
+        let class_number = bitutils::read_u32(&mut iter);
+    }
 
+    fn get_string(error_code: u8) -> &str{
+        match error_code {
+            300 => "Try Alternate",
+            400 => "Bad Request",
+            401 => "Unauthorized",
+            420 => "Unknown Attribute",
+            438 => "Stale Nonce",
+            500 => "Server Error"
+        }
     }
 }
