@@ -13,9 +13,9 @@ pub struct XorMappedAddress {
 impl XorMappedAddress {
     pub fn new(family: u8, port: u16, address: Either<u32, u128>) -> Self {
         XorMappedAddress {
-            family: family,
-            port: port,
-            address: address,
+            family,
+            port,
+            address,
             attribute_type: AttributeType::XorMappedAddress,
         }
     }
