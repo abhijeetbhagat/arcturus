@@ -1,5 +1,4 @@
 use rand::prelude::*;
-use std::net::Ipv4Addr;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
