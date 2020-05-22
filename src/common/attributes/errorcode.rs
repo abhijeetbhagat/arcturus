@@ -1,3 +1,4 @@
+use crate::common::attributetype::AttributeType;
 use crate::utils::bitutils;
 
 /* from https://tools.ietf.org/html/rfc5389#section-15.6
@@ -13,46 +14,42 @@ use crate::utils::bitutils;
                       Figure 7: ERROR-CODE Attribute
 */
 pub struct ErrorCode {
-    class_number: u32,
+    class_number: u16,
     reason_phrase: String,
+    pub attribute_type: AttributeType,
 }
 
 impl ErrorCode {
-    pub fn new(class_number: u32, reason_phrase: String) -> Self {
+    pub fn new<RP>(class_number: u16, reason_phrase: RP) -> Self
+    where
+        RP: Into<String>,
+    {
         ErrorCode {
-            class_number: class_number,
-            reason_phrase: reason_phrase,
+            class_number,
+            reason_phrase: reason_phrase.into(),
+            attribute_type: AttributeType::ErrorCode,
         }
     }
 
-    fn get_string(error_code: u32) -> &'static str {
-        match error_code {
-            300 => "Try Alternate",
-            400 => "Bad Request",
-            401 => "Unauthorized",
-            420 => "Unknown Attribute",
-            438 => "Stale Nonce",
-            500 => "Server Error",
+    fn get_string(class_number: u16) -> &'static str {
+        match class_number {
+            0x300 => "Try Alternate",
+            0x400 => "Bad Request",
+            0x401 => "Unauthorized",
+            0x420 => "Unknown Attribute",
+            0x438 => "Stale Nonce",
+            0x500 => "Server Error",
             _ => "Unknown Error",
         }
     }
 }
 
-/*impl From<&[u8]> for ErrorCode{
-    fn from(data: &[u8]) -> Self {
-        let mut iter = data.iter();
-        let class_number = bitutils::read_u32(&mut iter);
-    }
-
-    pub fn from_raw(data: &[u8]) -> Option<Self> {
-        let mut iter = data.iter();
-        let class_number = bitutils::read_u32(&mut iter);
-    }
-}*/
-
 impl From<&ErrorCode> for Vec<u8> {
     fn from(err_code: &ErrorCode) -> Vec<u8> {
         let mut vec = Vec::with_capacity(12);
+        vec.extend_from_slice(&(err_code.attribute_type.clone() as u16).to_be_bytes());
+        let reason_phrase = ErrorCode::get_string(err_code.class_number);
+        vec.extend_from_slice(&(4 + reason_phrase.len() as u16).to_be_bytes());
         vec.extend_from_slice(&(err_code.class_number as u32).to_be_bytes());
         vec.extend_from_slice(&err_code.reason_phrase.as_bytes());
         vec
@@ -62,7 +59,11 @@ impl From<&ErrorCode> for Vec<u8> {
 impl From<&[u8]> for ErrorCode {
     fn from(data: &[u8]) -> ErrorCode {
         let mut iter = data.iter();
-        let class_number = bitutils::read_u32(&mut iter);
-        unimplemented!();
+        let class_number = bitutils::read_u32(&mut iter) as u16;
+        let reason_phrase = ErrorCode::get_string(class_number);
+        //We do not need to read the reason phrase from the packet
+        //since we already know it via get_string above
+        //bitutils::read_nbytes(&mut iter, reason_phrase.len())
+        ErrorCode::new(class_number, reason_phrase)
     }
 }
