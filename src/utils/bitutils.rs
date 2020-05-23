@@ -63,10 +63,12 @@ mod test {
         assert!(5 == read_u8(&mut iterator));
         assert!(0x102 == read_u16(&mut iterator));
         assert!(0x304 == read_u16(&mut iterator));
-        assert!(0x5060708 == read_u32(&mut iterator));
-        assert!(&[9, 10] == read_nbytes(&mut iterator, 2));
-        assert!(&[1] == read_nbytes(&mut iterator, 1));
-        assert!(0x2020202020202020202020202020202 == to_txn_id(read_nbytes(&mut iterator, 16)));
+        assert!(0x5_060_708 == read_u32(&mut iterator));
+        assert!([9, 10] == read_nbytes(&mut iterator, 2));
+        assert!([1] == read_nbytes(&mut iterator, 1));
+        assert!(
+            0x0202_0202_0202_0202_0202_0202_0202_0202 == to_txn_id(read_nbytes(&mut iterator, 16))
+        );
         assert!(0x3 == read_u8(&mut iterator));
     }
 }
