@@ -88,8 +88,8 @@ pub struct StunMessageHeader {
 impl StunMessageHeader {
     pub fn new(msg_type: Type, length: u16, txn_id: u128) -> Self {
         StunMessageHeader {
-            msg_type: msg_type,
-            length: length,
+            msg_type,
+            length,
             magic: miscutils::MAGIC_COOKIE,
             txn_id: txn_id & 0xffffffffffffffffffffffff, //take 96 bits
         }
@@ -111,10 +111,7 @@ pub struct StunMessage {
 
 impl StunMessage {
     pub fn new(header: StunMessageHeader, payload: Option<Vec<u8>>) -> Self {
-        StunMessage {
-            header: header,
-            payload: payload,
-        }
+        StunMessage { header, payload }
     }
 
     pub fn as_raw(&self) -> Vec<u8> {
