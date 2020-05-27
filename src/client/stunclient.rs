@@ -4,6 +4,7 @@ use crate::utils::miscutils;
 use crate::utils::miscutils::Result;
 use crate::utils::obfuscation;
 use async_trait::async_trait;
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 #[async_trait]
 pub trait StunClient {
@@ -28,7 +29,7 @@ pub trait StunClient {
             );
             //let ip: u32 = u32::from("127.0.0.1".parse::<Ipv4Addr>().unwrap());
             //assert!(integral_addr == ip);
-            println!("Your IPv4 addr is {:?}", integral_addr);
+            println!("Your IPv4 addr is {:?}", Ipv4Addr::from(integral_addr));
         } else {
             //TODO abhi: assert on an ipv6 address
             let integral_addr: u128 = obfuscation::unobfuscate_v6_ip(
@@ -36,7 +37,7 @@ pub trait StunClient {
                 miscutils::MAGIC_COOKIE,
                 binding_response.header.txn_id,
             );
-            println!("Your IPv6 addr is {:?}", integral_addr);
+            println!("Your IPv6 addr is {:?}", Ipv6Addr::from(integral_addr));
         }
 
         Ok(())
