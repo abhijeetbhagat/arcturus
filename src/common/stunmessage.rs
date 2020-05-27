@@ -154,7 +154,7 @@ impl StunMessage {
             _ => Class::Unknown,
         };
 
-        let method = match word & 0xffff {
+        let method = match word {
             0x1 => Method::BindingRequest,
             0x101 => Method::BindingResponse,
             _ => Method::Unknown,
