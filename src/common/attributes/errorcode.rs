@@ -20,10 +20,7 @@ pub struct ErrorCode {
 }
 
 impl ErrorCode {
-    pub fn new<RP>(class_number: u16, reason_phrase: RP) -> Self
-    where
-        RP: Into<String>,
-    {
+    pub fn new(class_number: u16, reason_phrase: impl Into<String>) -> Self {
         ErrorCode {
             class_number,
             reason_phrase: reason_phrase.into(),
