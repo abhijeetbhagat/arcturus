@@ -24,10 +24,10 @@ Started shining using TCP at V6([::1]:3478)
 ```
 
 
-Ask arcturus where you are and it gives you your address as a `u32`:
+Ask arcturus where you are and it gives you your address:
 ```
 $ cargo run -- whereami -h 127.0.0.1:3478
-Your IPv4 addr is 2130706433
+Your IPv4 addr is 127.0.0.1
 ```
 or query arcturus if it is listening at an IPv6 address:
 ```
