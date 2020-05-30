@@ -128,16 +128,15 @@ impl StunMessage {
     }
 
     pub fn from_raw(data: &[u8]) -> Option<Self> {
-        let mut iter = data.iter();
-        let msg_type = bitutils::read_u16(&mut iter);
-        let msg_length = bitutils::read_u16(&mut iter);
-        let _magic_cookie = bitutils::read_u32(&mut iter);
-        let txn_id =
-            bitutils::to_txn_id(&[&[0u8, 0, 0, 0], bitutils::read_nbytes(&mut iter, 12)].concat());
+        let reader = bitutils::BitStream::new(data);
+        let msg_type = reader.read_u16()?;
+        let msg_length = reader.read_u16()?;
+        let _magic_cookie = reader.read_u32()?;
+        let txn_id = bitutils::to_txn_id(&[&[0u8, 0, 0, 0], reader.read_nbytes(12u8)?].concat());
         let (class, method) = StunMessage::get_class_and_method(msg_type);
         let header = StunMessageHeader::new(Type(class, method), msg_length, txn_id);
         let payload = if msg_length > 0 {
-            Some(Box::new(bitutils::read_nbytes(&mut iter, msg_length as usize)).to_vec())
+            Some(Box::new(reader.read_nbytes(msg_length)?).to_vec())
         } else {
             None
         };
