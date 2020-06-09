@@ -7,10 +7,8 @@ mod common;
 mod server;
 mod utils;
 
-use async_std::net::Ipv4Addr;
 use async_std::net::SocketAddr;
-use async_std::net::{IpAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
-use client::stunclient::StunClient;
+use async_std::net::{SocketAddrV4, SocketAddrV6, ToSocketAddrs};
 use client::tcpclient::StunTcpClient;
 use client::udpclient::StunUdpClient;
 use server::server::StunServer;
@@ -77,9 +75,9 @@ async fn main() -> std::io::Result<()> {
 
         //TODO abhi: start in a hybrid mode (TCP + UDP at the same time)
         if transport == "tcp" {
-            StunServer::start(ip).await;
+            let _ = StunServer::start(ip).await;
         } else {
-            StunServer::start_udp(ip).await;
+            let _ = StunServer::start_udp(ip).await;
         }
 
         Ok(())
