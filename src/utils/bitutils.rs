@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use std::slice::Iter;
 
 /// A unidirectional stream reader
-struct BitStream<'a> {
+pub struct BitStream<'a> {
     data: &'a [u8],
     current_pos: RefCell<usize>,
 }

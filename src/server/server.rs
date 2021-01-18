@@ -1,3 +1,4 @@
+use crate::common::attributes::errorcode::ErrorCode;
 use crate::common::attributes::xormappedaddress::XorMappedAddress;
 use either::{Left, Right};
 //use crate::common::bindingresponse::BindingResponse;
@@ -21,7 +22,7 @@ impl StunServer {
         while let Some(stream) = incoming_stream.next().await {
             let stream = stream?;
             task::spawn(async move {
-                StunServer::handle(stream).await;
+                let _ = StunServer::handle(stream).await;
             });
         }
         Ok(())
@@ -32,7 +33,7 @@ impl StunServer {
         println!("Got request from {:?}", source_transport_sock_addr);
         let (reader, writer) = &mut (&stream, &stream);
         let mut buf = vec![0; 1024];
-        while let size = reader.read(&mut buf).await? {
+        while let Ok(size) = reader.read(&mut buf).await {
             //Check if this is a STUN request since other protocols
             //can be multiplexed according to https://tools.ietf.org/html/rfc5389#section-8
             if size > 0 {
@@ -54,13 +55,15 @@ impl StunServer {
         let socket = UdpSocket::bind(addr).await?;
         println!("Started shining using UDP at {:?}", socket.local_addr()?);
         let mut buf = vec![0; 1024];
-        loop {
-            let (size, peer) = socket.recv_from(&mut buf).await?;
+        while let Ok((size, peer)) = socket.recv_from(&mut buf).await {
             if size > 0 {
                 if let Some(stun_message) = StunServer::parse(&buf[..size], peer) {
                     socket.send_to(&stun_message.as_raw(), peer).await?;
                 } else {
                     println!("Couldnt parse request");
+                    socket
+                        .send_to(&Vec::<u8>::from(&ErrorCode::new(19, "Invalid Error")), peer)
+                        .await?;
                 }
             }
         }
@@ -69,7 +72,7 @@ impl StunServer {
 
     fn parse(buf: &[u8], source_transport_sock_addr: SocketAddr) -> Option<StunMessage> {
         if let Some(stun_message) = StunMessage::from_raw(buf) {
-            match (stun_message.header.msg_type) {
+            match stun_message.header.msg_type {
                 Type(Class::Request, Method::BindingRequest) => {
                     //This is a binding request
                     let response = match source_transport_sock_addr {
